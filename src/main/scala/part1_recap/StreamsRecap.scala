@@ -1,4 +1,4 @@
-package recap
+package part1_recap
 
 import akka.actor.ActorSystem
 import akka.stream.OverflowStrategy
