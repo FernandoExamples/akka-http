@@ -1,7 +1,8 @@
 package part2_lowlevelserver
 
 import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
-import akka.http.scaladsl.model.{HttpMethods, HttpRequest, HttpResponse, Uri}
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest, HttpResponse, StatusCodes, Uri}
 import akka.pattern.ask
 import akka.util.Timeout
 import spray.json._
@@ -93,13 +94,40 @@ object LowLevelRest extends App with GuitarStoreJsonProtocol {
   implicit val timeout = Timeout(2.seconds)
 
   val requestHandler: HttpRequest => Future[HttpResponse] = {
+
     case HttpRequest(HttpMethods.GET, Uri.Path("/api/guitars"), headers, entity, protocol) =>
       val guitarsFuture = (guitarDB ? FindAllGuitars).mapTo[List[Guitar]]
-      guitarsFuture.map{guitars =>
-        HttpResponse()
+      guitarsFuture.map { guitars =>
+        HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, guitars.toJson.prettyPrint))
+      }
+
+    case HttpRequest(HttpMethods.POST, Uri.Path("/api/guitars"), headers, entity, protocol) =>
+      //entities are Source[Bytes]
+      val strictEntityFuture = entity.toStrict(3.seconds)
+      strictEntityFuture.flatMap { strictEntity =>
+        val guitarJson = strictEntity.data.utf8String
+        val guitar = guitarJson.parseJson.convertTo[Guitar]
+
+        val guitarCreatedFuture = (guitarDB ? CreateGuitar(guitar)).mapTo[GuitarCreated]
+
+        guitarCreatedFuture.map { guitarCreated =>
+          HttpResponse(StatusCodes.OK)
+
+        }
 
       }
+
+
+    case request: HttpRequest =>
+      request.discardEntityBytes()
+      Future {
+        HttpResponse(status = StatusCodes.NotFound)
+      }
+
+
   }
+
+  Http().newServerAt("localhost", 8000).bind(requestHandler)
 
 
 }
