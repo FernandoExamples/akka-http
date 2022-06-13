@@ -1,6 +1,7 @@
 package part3_highlevelserver
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 
 object DirectivesBrakdown extends App {
@@ -40,7 +41,35 @@ object DirectivesBrakdown extends App {
   /**
    * Type #2: Extraction directives
    */
+  val pathExtractionRoute =
+    path("api" / "item" / IntNumber) { (item: Int) =>
+      println(s"I've got a number in my path ${item}")
+      complete(StatusCodes.OK)
+    }
 
+  //  Http().newServerAt("localhost", 8000).bind(pathExtractionRoute)
 
+  val pathMultiExtractionRoute =
+    path("api" / "item" / IntNumber / IntNumber) { (item: Int, id: Int) =>
+      println(s"I've got two numbers in my path ${item} - $id")
+      complete(StatusCodes.OK)
+    }
+
+  val queryParamExtractionRoute =
+    path("api" / "item") {
+      parameter('id.as[Int]) { (itemId: Int) =>
+        println(s"I've extracted the ID ${itemId}")
+        complete(StatusCodes.OK)
+      }
+    }
+
+  val extractRequestRoute =
+    path("controlEndpoint") {
+      extractRequest { (request: HttpRequest) =>
+        println(s"I've got http request: ${request}")
+        complete(StatusCodes.OK)
+
+      }
+    }
 
 }
