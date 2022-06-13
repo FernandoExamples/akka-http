@@ -4,7 +4,9 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 
-object DirectivesBrakdown extends App {
+import scala.language.postfixOps
+
+object DirectivesBreakdown extends App {
   implicit val system = ActorSystem("DirectivesBreakdown")
 
   import system.dispatcher
@@ -71,5 +73,78 @@ object DirectivesBrakdown extends App {
 
       }
     }
+
+  /**
+   * Type #3: composite directives
+   */
+
+  val simplePath =
+    path("api" / "item") {
+      get {
+        complete(StatusCodes.OK)
+      }
+
+    }
+
+  val compactSimpleNestedRoute = (path("api" / "item") & get) {
+    complete(StatusCodes.OK)
+  }
+
+  val compactExtractRequestRoute =
+    (path("controlEnpoint") & extractRequest & extractLog) { (request, logger) =>
+      logger.info(s"I've got http request: ${request}")
+      complete(StatusCodes.OK)
+    }
+
+  val repeatedRoute =
+    path("about") {
+      complete(StatusCodes.OK)
+    } ~
+      path("aboutUs") {
+        complete(StatusCodes.OK)
+      }
+
+  val dryRoute =
+    (path("about") | path("aboutUs")) {
+      complete(StatusCodes.OK)
+    }
+
+  //myblog.com/4 AND myblog.com?post=4
+
+  val blogById =
+    path(IntNumber) { (blogId: Int) =>
+      complete(StatusCodes.OK)
+    }
+
+  val blogByQueryParamRoute =
+    parameter("postId".as[Int]) { (blogId: Int) =>
+      complete(StatusCodes.OK)
+    }
+
+  //combinacion de las 2 de arriba
+  val combineBlogByIdRoute =
+    (path(IntNumber) | parameter("postId".as[Int])) { (blogPostId: Int) =>
+      complete(StatusCodes.OK)
+    }
+
+  /**
+   * Type #4: "actionable" directives
+   */
+
+  val completeOkRoute = complete(StatusCodes.OK)
+
+  val failedRoute =
+    path("notSupported") {
+      failWith(new RuntimeException("Unsupported"))
+    }
+
+  val routeWithRejection =
+    path("home") {
+      reject
+    } ~
+      path("index") {
+        complete(StatusCodes.OK)
+      }
+
 
 }
