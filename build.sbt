@@ -21,4 +21,5 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion,
   "com.typesafe.akka" %% "akka-testkit" % AkkaVersion % Test,
   "org.scalatest" %% "scalatest" % "3.2.12" % Test,
+  "ch.qos.logback" % "logback-classic" % "1.2.11"
 )
